@@ -83,6 +83,9 @@ db1 <- dbGetQuery(con,"
 
 
 ```
+
+### Descriptive Stats for Year Fare Amounts
+
 ```{r}
 dbGetQuery(con,"SELECT * FROM  yearly_fare_amount_quants") %>%
   rename(min_fare = min_fare_amount,
@@ -92,3 +95,13 @@ dbGetQuery(con,"SELECT * FROM  yearly_fare_amount_quants") %>%
 
 ```
 
+### Descriptive Stats Yearly Trip Distances
+
+```{r}
+dbGetQuery(con,"SELECT * FROM  yearly_distance_quants") %>%
+  rename(min_trip = min_trip_distance,
+         max_trip = max_trip_distance,
+         mean_trip = avg_trip_distance) %>%
+  flextable::flextable()
+
+```
