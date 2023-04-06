@@ -15,7 +15,7 @@ library(scales)
 ```{r}
 rm(list = ls())
 
-con <- dbConnect(duckdb::duckdb(), dbdir = "./nyctaxis.duckdb", read_only = FALSE)
+con <- dbConnect(duckdb::duckdb(), dbdir = "./nyctaxis.duckdb", read_only = TRUE)
 ```
 
 ## Yellow Cab Data for
