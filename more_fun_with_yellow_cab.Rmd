@@ -1,0 +1,94 @@
+---
+title: "NYC Yellow Cab 2013-2014"
+author: "David Jackson"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(duckdb)
+library(DBI)
+library(tidyverse)
+library(scales)
+```
+```{r}
+rm(list = ls())
+
+con <- dbConnect(duckdb::duckdb(), dbdir = "./nyctaxis.duckdb", read_only = FALSE)
+```
+
+## Yellow Cab Data for
+
+```{r}
+
+dbGetQuery(con,"
+           SELECT cal.year,cal.quarter,count(*) as ride_count
+          FROM yellowcab as yel
+           INNER JOIN dim_calendar as cal
+          ON cal.date = yel.start_date 
+          GROUP BY cal.year,cal.quarter
+          ORDER BY cal.year,cal.quarter;") %>%
+  ggplot() + geom_col(aes(x=factor(year),y=ride_count,fill=quarter)) +
+  scale_y_continuous(labels = comma) +
+  labs(title = "NYC Yellow Cab Ride Count",subtitle = "(By Year and Quarter)")
+  
+```
+```{r}
+df <- dbGetQuery(con,"
+           SELECT cal.year,cal.quarter,count(*) as ride_count
+          FROM yellowcab as yel
+           INNER JOIN dim_calendar as cal
+          ON cal.date = yel.start_date 
+          GROUP BY cal.year,cal.quarter
+          ORDER BY cal.year,cal.quarter;") 
+  ggplot(df) + geom_col(aes(x=factor(quarter),y=ride_count)) +
+  scale_y_continuous(labels = comma) +
+  labs(title = "NYC Yellow Cab Ride Count") + facet_wrap(~year)
+```
+
+#### Fare Amount
+
+```{r}
+db <- dbGetQuery(con,"
+           SELECT cal.year,cal.quarter,sum(mta_tax) as total_tax
+          FROM yellowcab as yel
+           INNER JOIN dim_calendar as cal
+          ON cal.date = yel.start_date 
+          GROUP BY cal.year,cal.quarter
+          ORDER BY cal.year,cal.quarter;")
+ ggplot(db, aes(x=factor(year), y=total_tax,fill=quarter)) +
+  geom_col(position = "dodge") +
+  scale_y_continuous(labels = comma) +
+  labs(title = "NYC Yellow Cab MTA Tax ($)", subtitle = "(By Year and Quarter)") 
+
+
+```
+```{r}
+dbGetQuery(con,"DESCRIBE dim_calendar")
+```
+
+```{r}
+db1 <- dbGetQuery(con,"
+           SELECT cal.year,cal.month,sum(mta_tax) as total_tax
+          FROM yellowcab as yel
+           INNER JOIN dim_calendar as cal
+          ON cal.date = yel.start_date 
+          GROUP BY cal.year,cal.month
+          ORDER BY cal.year,cal.month;")
+ ggplot(db1, aes(x=factor(month), y=total_tax)) +
+  geom_col(position = "dodge") +
+  scale_y_continuous(labels = comma) +
+  labs(title = "NYC Yellow Cab MTA Tax ($)", subtitle = "(By Year and Month)") + facet_wrap(~year)
+
+
+```
+```{r}
+dbGetQuery(con,"SELECT * FROM  yearly_fare_amount_quants") %>%
+  rename(min_fare = min_fare_amount,
+         max_fare = max_fare_amount,
+         mean_fare = avg_fare_amount) %>%
+  flextable::flextable()
+
+```
+
